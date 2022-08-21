@@ -1,0 +1,19 @@
+cc_library(
+    name = "libbencode",
+    srcs = [],
+    hdrs = ["libbencode.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "assertm",
+    srcs = [],
+    hdrs = ["assertm.h"],
+    visibility = ["//visibility:private"],
+)
+
+cc_test(
+    name = "test_decode_integer",
+    srcs = ["test/test_decode_integer.cc"],
+    deps = [":assertm", ":libbencode"],
+)
