@@ -1,0 +1,6 @@
+# macOS, C++ 20
+build:macos --cxxopt=-std=c++2a
+build:macos --cxxopt=-Wall
+build:macos --compilation_mode=dbg
+build:macos --define compiler=clang++
+build:macos --test_output=errors
