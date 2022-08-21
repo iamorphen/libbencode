@@ -1,0 +1,5 @@
+# Bazel artifacts.
+bazel-bin
+bazel-libbencode
+bazel-out
+bazel-testlogs
