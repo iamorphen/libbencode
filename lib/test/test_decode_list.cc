@@ -34,5 +34,13 @@ int main(void) {
   assertm(*std::get_if<std::string>(&list[1]) == "abcd",
           "Unexpected list element value.");
 
+  test_case = "li1e4:abcdeyyy";
+  std::tie(list, num_bytes) = DecodeList(test_case);
+  assertm(2 == list.size() && 11 == num_bytes, "Parse failed.");
+  assertm(*std::get_if<int64_t>(&list[0]) == 1,
+          "Unexpected list element value.");
+  assertm(*std::get_if<std::string>(&list[1]) == "abcd",
+          "Unexpected list element value.");
+
   return 0;
 }
