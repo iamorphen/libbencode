@@ -59,4 +59,47 @@ ParseResult<int64_t> DecodeInt(const std::string_view& bencode) {
   return {i, e_idx + 1};
 }
 
+/**
+ * Parse a string out of bencode data.
+ *
+ * @p bencode Bencode data. Let the bencode specification for well-formatted
+ *            strings be the contract for this parameter.
+ * @returns The parsed string and the number of bytes, inclusive, from the
+ *          beginning of the data used to parse the string.
+ * @throws std::runtime_error Thrown for any failure to parse a string out of
+ *                            the data.
+ */
+ParseResult<std::string> DecodeStr(const std::string_view& bencode) {
+  if (!bencode.size()) {
+    throw std::runtime_error("Not enough data to parse a string.");
+  }
+
+  if (bencode[0] == '-') {
+    throw std::runtime_error("String length cannot be negative.");
+  }
+
+  size_t colon_idx = bencode.find(':');
+
+  if (colon_idx == bencode.npos) {
+    throw std::runtime_error("No ':' delimiter found in data.");
+  }
+
+  size_t str_len = 0;
+  auto [ptr, err] = std::from_chars(&bencode[0], &bencode[colon_idx], str_len);
+
+  if (err != std::errc()) {
+    throw std::runtime_error("Failed to parse string length.");
+  }
+
+  const size_t total_bytes_for_str = colon_idx + 1 + str_len;
+
+  if (bencode.size() < total_bytes_for_str) {
+    throw std::runtime_error("Not enough data to parse a string.");
+  }
+
+  std::string str{str_len ? bencode.substr(colon_idx + 1, str_len) : ""};
+
+  return {str, total_bytes_for_str};
+}
+
 }; // namespace libbencode
