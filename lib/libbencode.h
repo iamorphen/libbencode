@@ -74,8 +74,8 @@ ParseResult<std::string> DecodeStr(const std::string_view& bencode) {
     throw std::runtime_error("Not enough data to parse a string.");
   }
 
-  if (bencode[0] == '-') {
-    throw std::runtime_error("String length cannot be negative.");
+  if (!std::isdigit(bencode[0])) {
+    throw std::runtime_error("Failed to parse string length.");
   }
 
   size_t colon_idx = bencode.find(':');
