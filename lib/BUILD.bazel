@@ -23,3 +23,9 @@ cc_test(
     srcs = ["test/test_decode_string.cc"],
     deps = [":assertm", ":libbencode"],
 )
+
+cc_test(
+    name = "test_decode_list",
+    srcs = ["test/test_decode_list.cc"],
+    deps = [":assertm", ":libbencode"],
+)

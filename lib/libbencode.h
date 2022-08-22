@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
+#include <variant>
+#include <vector>
 
 /**
  * A library for encoding and decoding bencode data. Format expectations come
@@ -11,6 +13,16 @@
  */
 
 namespace libbencode {
+
+/**
+ * A discriminated union representing a subset of all possible bencode types.
+ * For completeness, this type needs to be able to store instances of lists or
+ * dictionaries of itself. To do that, we need something like a fixed-point
+ * combinator.
+ */
+using BencodeValue = std::variant<int64_t, std::string>;
+
+using BencodeList = std::vector<BencodeValue>;
 
 /**
  * A type holding a result of parsing a value out of bencode data. The second
@@ -100,6 +112,48 @@ ParseResult<std::string> DecodeStr(const std::string_view& bencode) {
   std::string str{str_len ? bencode.substr(colon_idx + 1, str_len) : ""};
 
   return {str, total_bytes_for_str};
+}
+
+/**
+ * Parse a list our of bencode data. At this time, only lists of integers and
+ * strings are supported.
+ *
+ * @p bencode Bencode data. Let the bencode specification for well-formatted
+ *            lists be the contract for this parameter.
+ * @returns The parsed list and the number of bytes, inclusive, from the
+ *          beginning of the data used to parse the list.
+ * @throws std::runtime_error Thrown for any failure to parse a list out of
+ *                            the data.
+ */
+ParseResult<BencodeList> DecodeList(const std::string_view& bencode) {
+  if (!bencode.size()) {
+    throw std::runtime_error("Not enough data to parse a list.");
+  }
+
+  if (bencode[0] != 'l') {
+    throw std::runtime_error("First character was not 'l'.");
+  }
+
+  BencodeList list;
+  size_t bencode_idx = 1; // Skip the leading 'l'.
+  while (bencode[bencode_idx] != 'e') {
+    const auto& indicator = bencode[bencode_idx];
+
+    if (indicator == 'i') {
+      auto [integer, num_bytes] = DecodeInt(bencode.substr(bencode_idx));
+      list.emplace_back(integer);
+      bencode_idx += num_bytes;
+    } else if (std::isdigit(indicator)) {
+      auto [str, num_bytes] = DecodeStr(bencode.substr(bencode_idx));
+      list.emplace_back(str);
+      bencode_idx += num_bytes;
+    } else {
+      // TODO(orphen) Use std::format when default macOS clang supports it.
+      throw std::runtime_error("Unsupported type indicator.");
+    }
+  }
+
+  return {list, bencode_idx + 1};
 }
 
 }; // namespace libbencode
