@@ -1,6 +1,7 @@
 #pragma once
 
 #include <charconv>
+#include <map>
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
@@ -23,6 +24,7 @@ namespace libbencode {
 using BencodeValue = std::variant<int64_t, std::string>;
 
 using BencodeList = std::vector<BencodeValue>;
+using BencodeDict = std::map<std::string, BencodeValue>;
 
 /**
  * A type holding a result of parsing a value out of bencode data. The second
@@ -154,6 +156,51 @@ ParseResult<BencodeList> DecodeList(const std::string_view& bencode) {
   }
 
   return {list, bencode_idx + 1};
+}
+
+/**
+ * Parse a dictionary out of bencode data. At this time, only integers and
+ * strings are supported as values.
+ *
+ * @p bencode Bencode data. Let the bencode specification for well-formatted
+ *            dictionaries be the contract for this parameter.
+ * @returns The parsed dictionary and the number of bytes, inclusive, from the
+ *          beginning of the data used to parse the dictionary.
+ * @throws std::runtime_error Thrown for any failure to parse a dictionary out
+ *                            of the data.
+ */
+ParseResult<BencodeDict> DecodeDict(const std::string_view& bencode) {
+  if (!bencode.size()) {
+    throw std::runtime_error("Not enough data to parse a dictionary.");
+  }
+
+  if (bencode[0] != 'd') {
+    throw std::runtime_error("First character was not 'd'.");
+  }
+
+  BencodeDict dict;
+  size_t bencode_idx = 1; // Skip the leading 'd'.
+
+  while (bencode[bencode_idx] != 'e') {
+    auto [key, num_bytes_key] = DecodeStr(bencode.substr(bencode_idx));
+    bencode_idx += num_bytes_key;
+
+    const auto& indicator = bencode[bencode_idx];
+    if (indicator == 'i') {
+      auto [integer, num_bytes] = DecodeInt(bencode.substr(bencode_idx));
+      dict.emplace(key, integer);
+      bencode_idx += num_bytes;
+    } else if (std::isdigit(indicator)) {
+      auto [str, num_bytes] = DecodeStr(bencode.substr(bencode_idx));
+      dict.emplace(key, str);
+      bencode_idx += num_bytes;
+    } else {
+      // TODO(orphen) Use std::format when default macOS clang supports it.
+      throw std::runtime_error("Unsupported type indicator.");
+    }
+  }
+
+  return {dict, bencode_idx + 1};
 }
 
 }; // namespace libbencode
