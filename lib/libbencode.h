@@ -16,15 +16,34 @@
 namespace libbencode {
 
 /**
- * A discriminated union representing a subset of all possible bencode types.
- * For completeness, this type needs to be able to store instances of lists or
- * dictionaries of itself. To do that, we need something like a fixed-point
- * combinator.
+ * A discriminated union representing the standard bencode types. The union is
+ * parameterizable so that it can be used in fixed-point combinators to become a
+ * recursive type.
+ *
+ * @tparam T A type that, if inherited from BencodeValue, creates a recursive
+ *           type definition.
  */
-using BencodeValue = std::variant<int64_t, std::string>;
+template <typename T>
+using BencodeValue = std::variant<int64_t, std::string, std::vector<T>,
+                                  std::map<std::string, T>>;
 
-using BencodeList = std::vector<BencodeValue>;
-using BencodeDict = std::map<std::string, BencodeValue>;
+/**
+ * A generic type used to create a recursive bencode type.
+ *
+ * @tparm U A template template parameter used to set up a fixed-point
+ *          combinator.
+ */
+template <template <typename> typename U>
+class FixedPointTerm : public U<FixedPointTerm<U>> {
+  using U<FixedPointTerm>::U;
+};
+
+// Complete the recursive type construction.
+using BencodeCombinator = FixedPointTerm<BencodeValue>;
+/** A list that can hold any of the standardized bencode types. */
+using BencodeList = std::vector<BencodeCombinator>;
+/** A map that can hold any of the standardized bencode types. */
+using BencodeDict = std::map<std::string, BencodeCombinator>;
 
 /**
  * A type holding a result of parsing a value out of bencode data. The second
