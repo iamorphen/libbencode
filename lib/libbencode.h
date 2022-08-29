@@ -136,7 +136,7 @@ ParseResult<std::string> DecodeStr(const std::string_view& bencode) {
 }
 
 /**
- * Parse a list our of bencode data. At this time, only lists of integers and
+ * Parse a list out of bencode data. At this time, only lists of integers and
  * strings are supported.
  *
  * @p bencode Bencode data. Let the bencode specification for well-formatted
