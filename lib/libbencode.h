@@ -139,8 +139,7 @@ ParseResult<std::string> DecodeStr(const std::string_view& bencode) {
 ParseResult<BencodeCombinator> DecodeValue(const std::string_view& bencode);
 
 /**
- * Parse a list out of bencode data. At this time, only lists of integers and
- * strings are supported.
+ * Parse a list out of bencode data.
  *
  * @p bencode Bencode data. Let the bencode specification for well-formatted
  *            lists be the contract for this parameter.
@@ -169,6 +168,10 @@ ParseResult<BencodeList> DecodeList(const std::string_view& bencode) {
       list.emplace_back(*v);
     } else if (const auto* v = std::get_if<std::string>(&val)) {
       list.emplace_back(*v);
+    } else if (const auto* v = std::get_if<BencodeList>(&val)) {
+      list.emplace_back(*v);
+    } else if (const auto* v = std::get_if<BencodeDict>(&val)) {
+      list.emplace_back(*v);
     } else {
       throw std::runtime_error("Unknown value type in bencode.");
     }
@@ -180,8 +183,7 @@ ParseResult<BencodeList> DecodeList(const std::string_view& bencode) {
 }
 
 /**
- * Parse a dictionary out of bencode data. At this time, only integers and
- * strings are supported as values.
+ * Parse a dictionary out of bencode data.
  *
  * @p bencode Bencode data. Let the bencode specification for well-formatted
  *            dictionaries be the contract for this parameter.
@@ -213,6 +215,10 @@ ParseResult<BencodeDict> DecodeDict(const std::string_view& bencode) {
     if (const auto* v = std::get_if<int64_t>(&val)) {
       dict.emplace(key, *v);
     } else if (const auto* v = std::get_if<std::string>(&val)) {
+      dict.emplace(key, *v);
+    } else if (const auto* v = std::get_if<BencodeList>(&val)) {
+      dict.emplace(key, *v);
+    } else if (const auto* v = std::get_if<BencodeDict>(&val)) {
       dict.emplace(key, *v);
     } else {
       throw std::runtime_error("Unknow value type in bencode.");
