@@ -15,6 +15,8 @@
 
 namespace libbencode {
 
+namespace detail {
+
 /**
  * A discriminated union representing the standard bencode types. The union is
  * parameterizable so that it can be used in fixed-point combinators to become a
@@ -38,10 +40,14 @@ class FixedPointTerm : public U<FixedPointTerm<U>> {
   using U<FixedPointTerm>::U;
 };
 
+}; // namespace detail
+
 // Complete the recursive type construction.
-using BencodeCombinator = FixedPointTerm<BencodeValue>;
+using BencodeCombinator = detail::FixedPointTerm<detail::BencodeValue>;
+
 /** A list that can hold any of the standardized bencode types. */
 using BencodeList = std::vector<BencodeCombinator>;
+
 /** A map that can hold any of the standardized bencode types. */
 using BencodeDict = std::map<std::string, BencodeCombinator>;
 
@@ -136,7 +142,11 @@ ParseResult<std::string> DecodeStr(const std::string_view& bencode) {
 }
 
 // Forward-declare a helper function.
+namespace detail {
+
 ParseResult<BencodeCombinator> DecodeValue(const std::string_view& bencode);
+
+} // namespace detail
 
 /**
  * Parse a list out of bencode data.
@@ -160,7 +170,7 @@ ParseResult<BencodeList> DecodeList(const std::string_view& bencode) {
   BencodeList list;
   size_t bencode_idx = 1; // Skip the leading 'l'.
   while (bencode[bencode_idx] != 'e') {
-    auto [val, num_bytes] = DecodeValue(bencode.substr(bencode_idx));
+    auto [val, num_bytes] = detail::DecodeValue(bencode.substr(bencode_idx));
 
     // Extract a value and emplace it in list.
     // TODO(orphen) Find a way to share this general logic with DecodeDict.
@@ -208,7 +218,7 @@ ParseResult<BencodeDict> DecodeDict(const std::string_view& bencode) {
     auto [key, num_bytes_key] = DecodeStr(bencode.substr(bencode_idx));
     bencode_idx += num_bytes_key;
 
-    auto [val, num_bytes] = DecodeValue(bencode.substr(bencode_idx));
+    auto [val, num_bytes] = detail::DecodeValue(bencode.substr(bencode_idx));
 
     // Extract a value and emplace it in the dictionary.
     // TODO(orphen) Find a way to share this general logic with DecodeList.
@@ -229,6 +239,8 @@ ParseResult<BencodeDict> DecodeDict(const std::string_view& bencode) {
 
   return {dict, bencode_idx + 1};
 }
+
+namespace detail {
 
 /**
  * A helper function that calls one of the other Decode* functions based on the
@@ -257,5 +269,7 @@ ParseResult<BencodeCombinator> DecodeValue(const std::string_view& bencode) {
 
   throw std::runtime_error("Unsupported bencode type.");
 }
+
+}; // namespace detail
 
 }; // namespace libbencode
