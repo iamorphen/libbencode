@@ -8,6 +8,8 @@ This project is an experiment with using templates and the C++ type system to
 create recursive data types. It is not intended to be performant, elegant, or
 easy to use.
 
+**License:** MIT
+
 ## Building
 
 **macOS:**
