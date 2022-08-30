@@ -135,6 +135,9 @@ ParseResult<std::string> DecodeStr(const std::string_view& bencode) {
   return {str, total_bytes_for_str};
 }
 
+// Forward-declare a helper function.
+ParseResult<BencodeCombinator> DecodeValue(const std::string_view& bencode);
+
 /**
  * Parse a list out of bencode data. At this time, only lists of integers and
  * strings are supported.
@@ -158,20 +161,19 @@ ParseResult<BencodeList> DecodeList(const std::string_view& bencode) {
   BencodeList list;
   size_t bencode_idx = 1; // Skip the leading 'l'.
   while (bencode[bencode_idx] != 'e') {
-    const auto& indicator = bencode[bencode_idx];
+    auto [val, num_bytes] = DecodeValue(bencode.substr(bencode_idx));
 
-    if (indicator == 'i') {
-      auto [integer, num_bytes] = DecodeInt(bencode.substr(bencode_idx));
-      list.emplace_back(integer);
-      bencode_idx += num_bytes;
-    } else if (std::isdigit(indicator)) {
-      auto [str, num_bytes] = DecodeStr(bencode.substr(bencode_idx));
-      list.emplace_back(str);
-      bencode_idx += num_bytes;
+    // Extract a value and emplace it in list.
+    // TODO(orphen) Find a way to share this general logic with DecodeDict.
+    if (const auto* v = std::get_if<int64_t>(&val)) {
+      list.emplace_back(*v);
+    } else if (const auto* v = std::get_if<std::string>(&val)) {
+      list.emplace_back(*v);
     } else {
-      // TODO(orphen) Use std::format when default macOS clang supports it.
-      throw std::runtime_error("Unsupported type indicator.");
+      throw std::runtime_error("Unknown value type in bencode.");
     }
+
+    bencode_idx += num_bytes;
   }
 
   return {list, bencode_idx + 1};
@@ -204,22 +206,50 @@ ParseResult<BencodeDict> DecodeDict(const std::string_view& bencode) {
     auto [key, num_bytes_key] = DecodeStr(bencode.substr(bencode_idx));
     bencode_idx += num_bytes_key;
 
-    const auto& indicator = bencode[bencode_idx];
-    if (indicator == 'i') {
-      auto [integer, num_bytes] = DecodeInt(bencode.substr(bencode_idx));
-      dict.emplace(key, integer);
-      bencode_idx += num_bytes;
-    } else if (std::isdigit(indicator)) {
-      auto [str, num_bytes] = DecodeStr(bencode.substr(bencode_idx));
-      dict.emplace(key, str);
-      bencode_idx += num_bytes;
+    auto [val, num_bytes] = DecodeValue(bencode.substr(bencode_idx));
+
+    // Extract a value and emplace it in the dictionary.
+    // TODO(orphen) Find a way to share this general logic with DecodeList.
+    if (const auto* v = std::get_if<int64_t>(&val)) {
+      dict.emplace(key, *v);
+    } else if (const auto* v = std::get_if<std::string>(&val)) {
+      dict.emplace(key, *v);
     } else {
-      // TODO(orphen) Use std::format when default macOS clang supports it.
-      throw std::runtime_error("Unsupported type indicator.");
+      throw std::runtime_error("Unknow value type in bencode.");
     }
+
+    bencode_idx += num_bytes;
   }
 
   return {dict, bencode_idx + 1};
+}
+
+/**
+ * A helper function that calls one of the other Decode* functions based on the
+ * bencode type intuited from the first character in @p bencode.
+ *
+ * @p bencode Bencode data. Let the bencode specification for well-formatted
+ *            data be the contract for this parameter.
+ * @returns A variant holding the value of one of the fundamental bencode types.
+ * @throws std::runtime_error Thrown if a bencode type cannot be intuited.
+ */
+ParseResult<BencodeCombinator> DecodeValue(const std::string_view& bencode) {
+  if (bencode.empty()) {
+    throw std::runtime_error("Not enough data to intuit bencode type.");
+  }
+
+  const auto& indicator = bencode[0];
+  if (indicator == 'i') {
+    return DecodeInt(bencode);
+  } else if (indicator == 'l') {
+    return DecodeList(bencode);
+  } else if (indicator == 'd') {
+    return DecodeDict(bencode);
+  } else if (std::isdigit(indicator)) {
+    return DecodeStr(bencode);
+  }
+
+  throw std::runtime_error("Unsupported bencode type.");
 }
 
 }; // namespace libbencode
