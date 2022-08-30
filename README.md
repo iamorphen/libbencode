@@ -1,8 +1,7 @@
 # libbencode
 
-A library for encoding and decoding
-[bencode](https://en.wikipedia.org/wiki/Bencode) data. Implementation follows
-the description provided in the
+A library for decoding [bencode](https://en.wikipedia.org/wiki/Bencode) data.
+Implementation follows the description provided in the
 [unofficial Bittorrent specification](https://wiki.theory.org/BitTorrentSpecification).
 
 This project is an experiment with using templates and the C++ type system to
