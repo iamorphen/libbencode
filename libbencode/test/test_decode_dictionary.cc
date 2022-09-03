@@ -2,8 +2,8 @@
 #include <string>
 #include <tuple>
 
-#include "lib/assertm.h"
-#include "lib/libbencode.h"
+#include "libbencode/assertm.h"
+#include "libbencode/libbencode.h"
 
 int main(void) {
   // Test input that satisfies the `DecodeDict` contract.

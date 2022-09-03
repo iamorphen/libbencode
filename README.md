@@ -12,7 +12,7 @@ system. It is not intended to be performant, elegant, or easy to use.
 ## Usage
 
 The library is header-only, so you only have to include it where you'd like to
-use it. For documentation, see the `lib/libbencode.h` source file.
+use it. For documentation, see the `libbencode/libbencode.h` source file.
 
 The library provides 4 main functions in the `libbencode` namespace.
 
