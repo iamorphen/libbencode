@@ -35,3 +35,14 @@ cc_test(
     srcs = ["test/test_decode_dictionary.cc"],
     deps = [":assertm", ":libbencode"],
 )
+
+cc_test(
+    name = "test_parse_torrent_file",
+    srcs = ["test/test_parse_torrent_file.cc"],
+    deps = [
+        ":assertm",
+        ":libbencode",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+    data = [":test/data/ubuntu-22.04.1-desktop-amd64.iso.torrent"],
+)
