@@ -3,4 +3,9 @@ build:macos --cxxopt=-std=c++2a
 build:macos --cxxopt=-Wall
 build:macos --compilation_mode=dbg
 build:macos --define compiler=clang++
-build:macos --test_output=errors
+
+test:macos --cxxopt=-std=c++2a
+test:macos --cxxopt=-Wall
+test:macos --compilation_mode=dbg
+test:macos --define compiler=clang++
+test:macos --test_output=errors
